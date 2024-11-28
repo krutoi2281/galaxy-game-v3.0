@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Галактическая Игра на Реакцию</title>
+    <style>
+        /* Используем шрифт, похожий на стиль Тетриса */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat, #000;
+            background-size: cover;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        #game-area {
+            width: 90vw; /* уменьшено для мобильных устройств */
+            height: 70vh;
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+        }
+
+        .circle {
+            width: 70px; /* уменьшено для мобильных устройств */
+            height: 70px;
+            border-radius: 50%;
+            position: absolute;
+            display: none;
+        }
+
+        #message {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            display: none;
+            text-shadow: 2px 2px 5px rgba(255, 255, 255, 0.8);
+        }
+
+        #start-btn {
+            font-size: 16px;
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: background-color 0.3s;
+        }
+
+        #start-btn:hover {
+            background-color: #45a049;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+        }
+
+        #record {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Респонсивность для мобильных устройств */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            .circle {
+                width: 50px;
+                height: 50px;
+            }
+
+            #game-area {
+                width: 85vw;
+                height: 60vh;
+            }
+
+            #message {
+                font-size: 20px;
+            }
+
+            #start-btn {
+                font-size: 14px;
+                padding: 6px 12px;
+            }
+
+            #score, #record {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Галактическая Игра на Реакцию</h1>
+<div id="game-area">
+    <div class="circle"></div>
+</div>
+<div id="message"></div>
+<div id="score">Счет: 0</div>
+<div id="record">Рекорд: 0</div>
+<button id="start-btn">Начать игру</button>
+
+<script>
+    const gameArea = document.getElementById('game-area');
+    const message = document.getElementById('message');
+    const scoreDisplay = document.getElementById('score');
+    const recordDisplay = document.getElementById('record');
+    const startButton = document.getElementById('start-btn');
+
+    let score = 0;
+    let gameStarted = false;
+    let disappearanceSpeed = 800; // Начальное время исчезновения шара в миллисекундах
+    let missed = false;
+    let maxAttempts = 1; // Количество попыток
+    let record = 0;
+
+    startButton.addEventListener('click', startGame);
+
+    function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        missed = false;
+        score = 0;
+        scoreDisplay.textContent = `Счет: ${score}`;
+        message.style.display = 'none';
+        message.textContent = '';
+        startButton.style.display = 'none';
+        nextRound();
+    }
+
+    function nextRound() {
+        if (missed) {
+            endGame();
+            return;
+        }
+        
+        showCircle();
+        setTimeout(() => {
+            if (!missed) {
+                endGame(); // Если игрок не попал, игра заканчивается
+            }
+        }, disappearanceSpeed);
+    }
+
+    function showCircle() {
+        disappearanceSpeed *= 0.9;  // Уменьшаем время исчезновения на 10% каждый раунд
+
+        // Используем getBoundingClientRect() для точных размеров контейнера
+        const gameAreaRect = gameArea.getBoundingClientRect();
+        const randomX = Math.random() * (gameAreaRect.width - 60);  // Размер круга уменьшен
+        const randomY = Math.random() * (gameAreaRect.height - 60);  // Размер круга уменьшен
+        const circle = document.createElement('div');
+        circle.classList.add('circle');
+        circle.style.left = `${randomX}px`;
+        circle.style.top = `${randomY}px`;
+
+        // Задаем случайный цвет для круга
+        const randomColor = getRandomColor();
+        circle.style.backgroundColor = randomColor;
+
+        gameArea.appendChild(circle);
+
+        circle.style.display = 'block';
+
+        circle.onclick = function () {
+            score++;
+            scoreDisplay.textContent = `Счет: ${score}`;
+            circle.style.display = 'none';
+            missed = false;
+            nextRound(); // Переход к следующему раунду
+        };
+
+        setTimeout(() => {
+            circle.style.display = 'none';
+            if (!missed) missed = true; // Если игрок не попал, пропуск раунда
+        }, disappearanceSpeed);  // Круг исчезает с уменьшением времени
+    }
+
+    function getRandomColor() {
+        const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A6', '#FFD700', '#8A2BE2', '#FF6347'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function endGame() {
+        if (score > record) {
+            record = score;
+            recordDisplay.textContent = `Рекорд: ${record}`;
+        }
+
+        if (score >= 1) {
+            message.textContent = "Ты победил!";
+        } else {
+            message.textContent = "Попробуй снова!";
+        }
+
+        message.style.display = 'block';
+        setTimeout(() => {
+            startButton.style.display = 'inline-block';
+            startButton.textContent = 'Сыграть снова';
+            gameStarted = false;
+        }, 1500);
+    }
+</script>
+
+</body>
+</html>
